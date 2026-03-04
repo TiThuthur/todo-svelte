@@ -1,22 +1,45 @@
 <script>
-	let todos = $state([
-		{
-			id: 1,
-			text: 'Apprendre Svelte',
-			completed: false
-		}
-	]);
+	import { onMount } from 'svelte';
+
+	let todos = $state([]);
 	let newTodo = $state('');
-	const addTodo = () => {
-		const todo = {
-			id: todos.length + 1,
-			text: newTodo,
-			completed: false
-		};
-		todos = [...todos, todo];
+
+	onMount(async () => {
+		const res = await fetch('/api/todos');
+		if (res.ok) todos = await res.json();
+	});
+
+	const addTodo = async () => {
+		if (!newTodo.trim()) return;
+		const res = await fetch('/api/todos', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ text: newTodo })
+		});
+		if (!res.ok) return;
+		const created = await res.json();
+		todos = [...todos, created];
 		newTodo = '';
 	};
-	const removeTodo = (id) => {
+
+	const toggleTodo = async (todo) => {
+		const res = await fetch('/api/todos', {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ id: todo.id, completed: !todo.completed })
+		});
+		if (!res.ok) return;
+		const updated = await res.json();
+		todos = todos.map((t) => (t.id === updated.id ? updated : t));
+	};
+
+	const removeTodo = async (id) => {
+		const res = await fetch('/api/todos', {
+			method: 'DELETE',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ id })
+		});
+		if (!res.ok) return;
 		todos = todos.filter((todo) => todo.id !== id);
 	};
 </script>
@@ -44,10 +67,16 @@
 		<div class="w-full bg-white p-4 shadow-md">
 			<p>Voici la liste de tes tâches :</p>
 			<ul>
-				{#each todos as todo}
+				{#each todos as todo (todo.id)}
 					<li class="flex w-full items-center justify-around p-1">
 						<span>
-							<input type="checkbox" id="completed" bind:checked={todo.completed} class="p-1" />
+							<input
+								type="checkbox"
+								id="completed-{todo.id}"
+								checked={todo.completed}
+								onchange={() => toggleTodo(todo)}
+								class="p-1"
+							/>
 							{todo.text}
 						</span>
 						<button
