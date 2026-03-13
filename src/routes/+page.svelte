@@ -44,8 +44,9 @@
 		<div class="w-full bg-white p-4 shadow-md">
 			<p>Voici la liste de tes tâches :</p>
 			<ul>
-				{#each todos as todo}
+				{#each todos as todo (todo.id)}
 					<li class="flex w-full items-center justify-around p-1">
+						<span>{todo.id + 1}</span>
 						<span>
 							<input type="checkbox" id="completed" bind:checked={todo.completed} class="p-1" />
 							{todo.text}
